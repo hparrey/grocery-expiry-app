@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>FoodSaver</title>
+    <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+    <main class="phone-shell">
+        <section class="hero-card">
+            <div class="hero-top">
+                <div>
+                    <p class="eyebrow">FoodSaver for Students</p>
+                    <h1>Use your food before it goes bad.</h1>
+                </div>
+                <div class="badge">MVP</div>
+            </div>
+
+            <div class="summary-grid">
+                <div class="summary-box">
+                    <span class="summary-number">{{ summary.total_items }}</span>
+                    <span class="summary-label">Items in pantry</span>
+                </div>
+                <div class="summary-box">
+                    <span class="summary-number">{{ summary.expiring_soon }}</span>
+                    <span class="summary-label">Expiring soon</span>
+                </div>
+                <div class="summary-box">
+                    <span class="summary-number">{{ summary.saved_count }}</span>
+                    <span class="summary-label">Items saved</span>
+                </div>
+                <div class="summary-box">
+                    <span class="summary-number">{{ summary.expired_count }}</span>
+                    <span class="summary-label">Already expired</span>
+                </div>
+            </div>
+        </section>
+
+        <section class="card">
+            <div class="section-header">
+                <h2>Add grocery item</h2>
+                <span class="section-note">Today: {{ today }}</span>
+            </div>
+
+            <form action="/add" method="post" class="add-form">
+                <input type="text" id="item-name" name="name" placeholder="Item name" required />
+                <input type="text" id="item-category" name="category" placeholder="Category" required />
+                <input type="date" id="item-expiration" name="expiration_date" required />
+
+                <div style="margin-top: 4px;">
+                    <label for="expiry-photo" style="display:block; margin-bottom:8px; font-weight:600;">
+                        Take a photo of the expiration date
+                    </label>
+                    <input
+                        type="file"
+                        id="expiry-photo"
+                        accept="image/*"
+                        capture="environment"
+                        onchange="previewExpiryPhoto()"
+                    />
+                </div>
+
+                <img
+                    id="expiry-preview"
+                    alt="Expiration date preview"
+                    style="display:none; width:100%; border-radius:16px; margin-top:10px;"
+                />
+
+                <button type="button" onclick="readExpiryPhoto()">Read Expiration Date</button>
+                <p id="ocr-status" class="section-note" style="margin-top:4px;">
+                    You can scan the printed date with your camera or type it manually.
+                </p>
+
+                <button type="submit">Add Item</button>
+            </form>
+        </section>
+
+        <section class="card">
+            <div class="section-header">
+                <h2>Expiring soon</h2>
+                <span class="section-note">Use these first</span>
+            </div>
+
+            <div class="item-list">
+                {% if items %}
+                    {% for item in items %}
+                        <div class="item-row">
+                            <div class="item-main">
+                                <div class="item-title-line">
+                                    <h3>{{ item.name }}</h3>
+                                    <span class="pill {{ item.status }}">
+                                        {% if item.days_left < 0 %}
+                                            Expired {{ item.days_left | abs }}d ago
+                                        {% elif item.days_left == 0 %}
+                                            Eat today
+                                        {% else %}
+                                            {{ item.days_left }} day{{ '' if item.days_left == 1 else 's' }} left
+                                        {% endif %}
+                                    </span>
+                                </div>
+                                <p>{{ item.category }}</p>
+                            </div>
+                            <form action="/use/{{ item.id }}" method="post">
+                                <button class="use-btn" type="submit">Used</button>
+                            </form>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="empty-state">Your pantry is empty right now.</p>
+                {% endif %}
+            </div>
+        </section>
+
+        <section class="card">
+            <div class="section-header">
+                <h2>Cook this tonight</h2>
+                <span class="section-note">Quick suggestions</span>
+            </div>
+
+            <div class="suggestion-list">
+                {% for suggestion in suggestions %}
+                    <div class="suggestion-card">
+                        <h3>{{ suggestion.name }}</h3>
+                        <p>{{ suggestion.description }}</p>
+                        <div class="match-row">
+                            {% for match in suggestion.matches %}
+                                <span class="chip">{{ match }}</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </section>
+
+        <section class="card impact-card">
+            <div class="section-header">
+                <h2>Waste saved tracker</h2>
+                <span class="section-note">Simple behavior feedback</span>
+            </div>
+            <p class="impact-copy">
+                Every time you mark an item as used before it expires, FoodSaver counts it as food saved from waste.
+            </p>
+            <div class="impact-score">{{ summary.saved_count }} items saved</div>
+        </section>
+    </main>
+
+    <script src="https://unpkg.com/tesseract.js@5/dist/tesseract.min.js"></script>
+    <script src="/static/app.js"></script>
+</body>
+</html>
