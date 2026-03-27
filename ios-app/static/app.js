@@ -1,7 +1,25 @@
+function toggleCustomCategory() {
+    const categorySelect = document.getElementById("item-category");
+    const customCategoryInput = document.getElementById("custom-category");
+
+    if (!categorySelect || !customCategoryInput) return;
+
+    if (categorySelect.value === "Other") {
+        customCategoryInput.style.display = "block";
+        customCategoryInput.required = true;
+    } else {
+        customCategoryInput.style.display = "none";
+        customCategoryInput.required = false;
+        customCategoryInput.value = "";
+    }
+}
+
 function previewExpiryPhoto() {
     const fileInput = document.getElementById("expiry-photo");
     const preview = document.getElementById("expiry-preview");
     const status = document.getElementById("ocr-status");
+
+    if (!fileInput || !preview || !status) return;
 
     if (!fileInput.files || fileInput.files.length === 0) {
         preview.style.display = "none";
@@ -22,6 +40,8 @@ async function readExpiryPhoto() {
     const status = document.getElementById("ocr-status");
     const expirationInput = document.getElementById("item-expiration");
 
+    if (!fileInput || !status || !expirationInput) return;
+
     if (!fileInput.files || fileInput.files.length === 0) {
         status.textContent = "Please take or choose a photo first.";
         return;
@@ -33,7 +53,10 @@ async function readExpiryPhoto() {
     try {
         const result = await Tesseract.recognize(file, "eng", {
             logger: (message) => {
-                if (message.status === "recognizing text" && typeof message.progress === "number") {
+                if (
+                    message.status === "recognizing text" &&
+                    typeof message.progress === "number"
+                ) {
                     const percent = Math.round(message.progress * 100);
                     status.textContent = `Reading expiration date... ${percent}%`;
                 }
@@ -79,7 +102,7 @@ function extractDateFromText(rawText) {
 
     let match;
 
-    match = text.match(/(?:EXP\s*)?(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{2,4})/);
+    match = text.match(/(?:EXP\s*)?(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})/);
     if (match) {
         let month = match[1];
         let day = match[2];
@@ -89,7 +112,7 @@ function extractDateFromText(rawText) {
         return toIsoDate(year, month, day);
     }
 
-    match = text.match(/(?:EXP\s*)?(\d{4})[\/\-\.](\d{1,2})[\/\-\.](\d{1,2})/);
+    match = text.match(/(?:EXP\s*)?(\d{4})[\/\-.](\d{1,2})[\/\-.](\d{1,2})/);
     if (match) {
         const year = match[1];
         const month = match[2];
@@ -179,3 +202,7 @@ function formatForDisplay(isoDate) {
     const [year, month, day] = isoDate.split("-");
     return `${month}/${day}/${year}`;
 }
+
+document.addEventListener("DOMContentLoaded", () => {
+    toggleCustomCategory();
+});

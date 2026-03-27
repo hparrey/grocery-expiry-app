@@ -45,11 +45,33 @@
 
             <form action="/add" method="post" class="add-form">
                 <input type="text" id="item-name" name="name" placeholder="Item name" required />
-                <input type="text" id="item-category" name="category" placeholder="Category" required />
+
+                <select id="item-category" name="category" required onchange="toggleCustomCategory()">
+                    <option value="">Select a category</option>
+                    <option value="Produce">Produce</option>
+                    <option value="Dairy">Dairy</option>
+                    <option value="Protein">Protein</option>
+                    <option value="Grains">Grains</option>
+                    <option value="Frozen">Frozen</option>
+                    <option value="Snacks">Snacks</option>
+                    <option value="Beverages">Beverages</option>
+                    <option value="Canned Goods">Canned Goods</option>
+                    <option value="Condiments">Condiments</option>
+                    <option value="Other">Other</option>
+                </select>
+
+                <input
+                    type="text"
+                    id="custom-category"
+                    name="custom_category"
+                    placeholder="Type custom category"
+                    style="display:none;"
+                />
+
                 <input type="date" id="item-expiration" name="expiration_date" required />
 
-                <div style="margin-top: 4px;">
-                    <label for="expiry-photo" style="display:block; margin-bottom:8px; font-weight:600;">
+                <div class="photo-upload-block">
+                    <label for="expiry-photo" class="photo-label">
                         Take a photo of the expiration date
                     </label>
                     <input
@@ -68,6 +90,7 @@
                 />
 
                 <button type="button" onclick="readExpiryPhoto()">Read Expiration Date</button>
+
                 <p id="ocr-status" class="section-note" style="margin-top:4px;">
                     You can scan the printed date with your camera or type it manually.
                 </p>
@@ -115,21 +138,28 @@
         <section class="card">
             <div class="section-header">
                 <h2>Cook this tonight</h2>
-                <span class="section-note">Quick suggestions</span>
+                <span class="section-note">AI suggestions based on your pantry</span>
             </div>
 
             <div class="suggestion-list">
-                {% for suggestion in suggestions %}
-                    <div class="suggestion-card">
-                        <h3>{{ suggestion.name }}</h3>
-                        <p>{{ suggestion.description }}</p>
-                        <div class="match-row">
-                            {% for match in suggestion.matches %}
-                                <span class="chip">{{ match }}</span>
-                            {% endfor %}
+                {% if suggestions %}
+                    {% for suggestion in suggestions %}
+                        <div class="suggestion-card">
+                            <h3>{{ suggestion.name }}</h3>
+                            <p>{{ suggestion.description }}</p>
+
+                            {% if suggestion.matches %}
+                                <div class="match-row">
+                                    {% for match in suggestion.matches %}
+                                        <span class="chip">{{ match }}</span>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
                         </div>
-                    </div>
-                {% endfor %}
+                    {% endfor %}
+                {% else %}
+                    <p class="empty-state">Add some pantry items to get recipe suggestions.</p>
+                {% endif %}
             </div>
         </section>
 

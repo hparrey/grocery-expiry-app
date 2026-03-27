@@ -2,3 +2,6 @@ fastapi
 uvicorn
 jinja2
 python-multipart
+python-dotenv
+pillow
+google-generativeai

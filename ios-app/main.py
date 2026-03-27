@@ -1,11 +1,14 @@
 from datetime import date, datetime, timedelta
 from pathlib import Path
 from typing import List
+import json
+import os
 
 from fastapi import FastAPI, Form, Request
 from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from google import genai
 
 BASE_DIR = Path(__file__).resolve().parent
 
@@ -38,32 +41,9 @@ pantry_items: List[dict] = [
     },
 ]
 
-RECIPE_RULES = [
-    {
-        "name": "Veggie Omelet",
-        "needs_any": ["eggs"],
-        "needs_optional": ["spinach", "cheese", "onion"],
-        "description": "Use up eggs with any extra vegetables before they go bad.",
-    },
-    {
-        "name": "Fried Rice",
-        "needs_any": ["rice"],
-        "needs_optional": ["eggs", "spinach", "onion", "carrot"],
-        "description": "Great for using leftover rice and random vegetables.",
-    },
-    {
-        "name": "Pasta Bowl",
-        "needs_any": ["pasta"],
-        "needs_optional": ["spinach", "tomato", "cheese"],
-        "description": "Quick meal for using produce that is close to expiring.",
-    },
-    {
-        "name": "Smoothie",
-        "needs_any": ["banana", "milk", "yogurt"],
-        "needs_optional": ["berries", "spinach"],
-        "description": "Easy way to use fruit before it spoils.",
-    },
-]
+genai_client = None
+if os.getenv("GEMINI_API_KEY"):
+    genai_client = genai.Client()
 
 
 def parse_date(value: str) -> date:
@@ -113,56 +93,158 @@ def get_summary() -> dict:
     }
 
 
-def get_suggestions() -> list:
-    active_names = {
-        item["name"].strip().lower()
-        for item in pantry_items
-        if not item["used"]
-    }
+def get_active_items() -> list[dict]:
+    items = [serialize_item(item) for item in pantry_items if not item["used"]]
+    items.sort(key=lambda x: x["days_left"])
+    return items
 
-    suggestions = []
 
-    for recipe in RECIPE_RULES:
-        has_required = any(item in active_names for item in recipe["needs_any"])
-        optional_matches = [
-            item for item in recipe["needs_optional"]
-            if item in active_names
-        ]
+def fallback_suggestions(active_items: list[dict]) -> list[dict]:
+    if not active_items:
+        return []
 
-        if has_required or len(optional_matches) >= 2:
-            required_matches = [
-                item for item in recipe["needs_any"]
-                if item in active_names
-            ]
-            suggestions.append(
-                {
-                    "name": recipe["name"],
-                    "description": recipe["description"],
-                    "matches": optional_matches + required_matches,
-                }
-            )
+    urgent_items = [item["name"] for item in active_items if item["days_left"] <= 2]
+    all_items = [item["name"] for item in active_items]
 
-    if not suggestions and active_names:
-        suggestions.append(
-            {
-                "name": "Use-First Meal",
-                "description": "Build a quick meal around the items closest to expiring.",
-                "matches": list(active_names)[:3],
-            }
-        )
+    suggestions = [
+        {
+            "name": "Quick Stir Fry",
+            "description": "A flexible meal idea using your most urgent ingredients first.",
+            "matches": urgent_items[:3] if urgent_items else all_items[:3],
+        },
+        {
+            "name": "Pantry Bowl",
+            "description": "A simple bowl-style meal built around what you already have.",
+            "matches": all_items[:3],
+        },
+        {
+            "name": "Use-It-Up Scramble",
+            "description": "A fast way to combine ingredients that are close to expiring.",
+            "matches": urgent_items[:2] + all_items[:1] if urgent_items else all_items[:3],
+        },
+    ]
 
     return suggestions[:3]
 
 
+def extract_json_block(text: str) -> str:
+    text = text.strip()
+
+    if text.startswith("```"):
+        lines = text.splitlines()
+        if len(lines) >= 3:
+            text = "\n".join(lines[1:-1]).strip()
+
+    start = text.find("[")
+    end = text.rfind("]")
+
+    if start != -1 and end != -1 and end > start:
+        return text[start:end + 1]
+
+    return text
+
+
+def get_ai_suggestions(active_items: list[dict]) -> list[dict]:
+    if not active_items:
+        return []
+
+    if genai_client is None:
+        return fallback_suggestions(active_items)
+
+    pantry_names = [item["name"] for item in active_items]
+    urgent_items = [
+        {
+            "name": item["name"],
+            "days_left": item["days_left"],
+            "category": item["category"],
+        }
+        for item in active_items
+        if item["days_left"] <= 2
+    ]
+
+    prompt = f"""
+You are helping a college student use food before it expires.
+
+Current pantry items:
+{json.dumps(active_items, indent=2)}
+
+Urgent items that expire soon:
+{json.dumps(urgent_items, indent=2)}
+
+Task:
+Suggest exactly 3 easy recipe ideas that use the student's current pantry items.
+Prioritize items expiring soon.
+Keep recipes realistic, cheap, and student-friendly.
+Do not invent complicated gourmet meals.
+Do not include ingredients in "matches" unless they are actually in the pantry.
+
+Return ONLY valid JSON in this exact format:
+[
+  {{
+    "name": "Recipe name",
+    "description": "1-2 sentence explanation",
+    "matches": ["ingredient1", "ingredient2", "ingredient3"]
+  }}
+]
+"""
+
+    try:
+        response = genai_client.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=prompt,
+        )
+
+        raw_text = response.text or ""
+        json_text = extract_json_block(raw_text)
+        parsed = json.loads(json_text)
+
+        clean_results = []
+        pantry_lower = {name.lower() for name in pantry_names}
+
+        for item in parsed:
+            if not isinstance(item, dict):
+                continue
+
+            name = str(item.get("name", "")).strip()
+            description = str(item.get("description", "")).strip()
+            matches = item.get("matches", [])
+
+            if not isinstance(matches, list):
+                matches = []
+
+            filtered_matches = []
+            for match in matches:
+                match_str = str(match).strip()
+                if match_str.lower() in pantry_lower:
+                    filtered_matches.append(match_str)
+
+            if name and description:
+                clean_results.append(
+                    {
+                        "name": name,
+                        "description": description,
+                        "matches": filtered_matches[:5],
+                    }
+                )
+
+        if clean_results:
+            return clean_results[:3]
+
+        return fallback_suggestions(active_items)
+
+    except Exception as e:
+        print("Gemini suggestion error:", e)
+        return fallback_suggestions(active_items)
+
+
 @app.get("/")
 def home(request: Request):
-    items = [serialize_item(item) for item in pantry_items if not item["used"]]
-    items.sort(key=lambda x: x["days_left"])
+    items = get_active_items()
 
     context = {
         "items": items,
         "summary": get_summary(),
-        "suggestions": get_suggestions(),
+        "suggestions": get_ai_suggestions(items),
         "today": str(date.today()),
     }
 
@@ -178,14 +260,20 @@ def add_item(
     name: str = Form(...),
     category: str = Form(...),
     expiration_date: str = Form(...),
+    custom_category: str = Form(""),
 ):
+    final_category = category.strip()
+
+    if final_category.lower() == "other" and custom_category.strip():
+        final_category = custom_category.strip()
+
     next_id = max([item["id"] for item in pantry_items], default=0) + 1
 
     pantry_items.append(
         {
             "id": next_id,
             "name": name.strip(),
-            "category": category.strip(),
+            "category": final_category,
             "expiration_date": expiration_date,
             "used": False,
         }
@@ -206,13 +294,12 @@ def mark_used(item_id: int):
 
 @app.get("/api/items")
 def api_items():
-    items = [serialize_item(item) for item in pantry_items if not item["used"]]
-    items.sort(key=lambda x: x["days_left"])
+    items = get_active_items()
 
     return JSONResponse(
         {
             "items": items,
             "summary": get_summary(),
-            "suggestions": get_suggestions(),
+            "suggestions": get_ai_suggestions(items),
         }
     )
