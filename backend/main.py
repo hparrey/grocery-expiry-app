@@ -11,52 +11,35 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from PIL import Image
 import google.generativeai as genai
+from supabase import create_client, Client
 
-BASE_DIR = Path(__file__).resolve().parent
 
-app = FastAPI(title="FoodSaver for Students")
+load_dotenv()
 
-app.mount("/static", StaticFiles(directory=BASE_DIR / "static"), name="static")
-templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 
-# -------------------------
-# In-memory pantry storage
-# -------------------------
-pantry_items: List[dict] = [
-    {
-        "id": 1,
-        "name": "Milk",
-        "category": "Dairy",
-        "expiration_date": str(date.today()),
-        "used": False,
-    },
-    {
-        "id": 2,
-        "name": "Eggs",
-        "category": "Protein",
-        "expiration_date": str(date.today() + timedelta(days=3)),
-        "used": False,
-    },
-    {
-        "id": 3,
-        "name": "Spinach",
-        "category": "Produce",
-        "expiration_date": str(date.today() + timedelta(days=2)),
-        "used": False,
-    },
-]
+supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
-# -------------------------
-# Gemini setup
-# -------------------------
-genai_client = None
-if os.getenv("GEMINI_API_KEY"):
-    genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
-    genai_client = genai.GenerativeModel("gemini-3-flash-preview")
+res = supabase.table("test").insert({"name": "hello"}).execute()
+print("Insert result:", res)
 
-# -------------------------
-# Image → Date + Category
-# -------------------------
+res2 = supabase.table("test").select("*").execute()
+print("Select result:", res2)
+
+api_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
+print("API key loaded:", bool(api_key))
+
+genai.configure(api_key=api_key)
+
+model = genai.GenerativeModel("gemini-3-flash-preview")
+
+app = FastAPI()
+
+@app.get("/")
+def root():
+    return {"message": "Backend is running"}
+
 @app.post("/extract-date/")
 async def extract_date(file: UploadFile = File(...)):
     try:
