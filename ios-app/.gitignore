@@ -1,0 +1,70 @@
+# =========================
+# 🔐 ENV / SECRETS
+# =========================
+.env
+*.env
+.env.*
+
+# =========================
+# 🐍 PYTHON (FastAPI backend)
+# =========================
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.sqlite3
+
+# Virtual environments
+venv/
+env/
+.venv/
+
+# Logs
+*.log
+
+# =========================
+# 📦 PYTHON BUILD FILES
+# =========================
+build/
+dist/
+*.egg-info/
+
+# =========================
+# 🍎 iOS / Xcode
+# =========================
+# User-specific files
+*.xcuserstate
+*.xcworkspace
+xcuserdata/
+
+# Derived data (build files)
+DerivedData/
+
+# Build folder
+build/
+
+# Swift Package Manager
+.swiftpm/
+Packages/
+
+# CocoaPods (if you use it)
+Pods/
+
+# =========================
+# 💻 GENERAL
+# =========================
+.DS_Store
+Thumbs.db
+
+# VSCode
+.vscode/
+
+# JetBrains
+.idea/
+
+# =========================
+# 🚫 OPTIONAL (only if needed)
+# =========================
+# Ignore large images if you're testing locally
+# *.jpg
+# *.png

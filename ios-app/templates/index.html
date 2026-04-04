@@ -8,6 +8,7 @@
 </head>
 <body>
     <main class="phone-shell">
+        <!-- User Greeting & Logout -->
         <section class="hero-card">
             <div class="hero-top">
                 <div>
@@ -17,26 +18,34 @@
                 <div class="badge">MVP</div>
             </div>
 
-            <div class="summary-grid">
-                <div class="summary-box">
-                    <span class="summary-number">{{ summary.total_items }}</span>
-                    <span class="summary-label">Items in pantry</span>
-                </div>
-                <div class="summary-box">
-                    <span class="summary-number">{{ summary.expiring_soon }}</span>
-                    <span class="summary-label">Expiring soon</span>
-                </div>
-                <div class="summary-box">
-                    <span class="summary-number">{{ summary.saved_count }}</span>
-                    <span class="summary-label">Items saved</span>
-                </div>
-                <div class="summary-box">
-                    <span class="summary-number">{{ summary.expired_count }}</span>
-                    <span class="summary-label">Already expired</span>
-                </div>
+            <p>Logged in as {{ user_email }}</p>
+
+            <form method="POST" action="/logout">
+                <button type="submit">Log out</button>
+            </form>
+        </section>
+
+        <!-- Summary Cards -->
+        <section class="summary-grid">
+            <div class="summary-box">
+                <span class="summary-number">{{ summary.total_items }}</span>
+                <span class="summary-label">Items in pantry</span>
+            </div>
+            <div class="summary-box">
+                <span class="summary-number">{{ summary.expiring_soon }}</span>
+                <span class="summary-label">Expiring soon</span>
+            </div>
+            <div class="summary-box">
+                <span class="summary-number">{{ summary.saved_count }}</span>
+                <span class="summary-label">Items saved</span>
+            </div>
+            <div class="summary-box">
+                <span class="summary-number">{{ summary.expired_count }}</span>
+                <span class="summary-label">Already expired</span>
             </div>
         </section>
 
+        <!-- Add Grocery Item Form -->
         <section class="card">
             <div class="section-header">
                 <h2>Add grocery item</h2>
@@ -60,34 +69,16 @@
                     <option value="Other">Other</option>
                 </select>
 
-                <input
-                    type="text"
-                    id="custom-category"
-                    name="custom_category"
-                    placeholder="Type custom category"
-                    style="display:none;"
-                />
+                <input type="text" id="custom-category" name="custom_category" placeholder="Type custom category" style="display:none;" />
 
                 <input type="date" id="item-expiration" name="expiration_date" required />
 
                 <div class="photo-upload-block">
-                    <label for="expiry-photo" class="photo-label">
-                        Take a photo of the expiration date
-                    </label>
-                    <input
-                        type="file"
-                        id="expiry-photo"
-                        accept="image/*"
-                        capture="environment"
-                        onchange="previewExpiryPhoto()"
-                    />
+                    <label for="expiry-photo" class="photo-label">Take a photo of the expiration date</label>
+                    <input type="file" id="expiry-photo" accept="image/*" capture="environment" onchange="previewExpiryPhoto()" />
                 </div>
 
-                <img
-                    id="expiry-preview"
-                    alt="Expiration date preview"
-                    style="display:none; width:100%; border-radius:16px; margin-top:10px;"
-                />
+                <img id="expiry-preview" alt="Expiration date preview" style="display:none; width:100%; border-radius:16px; margin-top:10px;" />
 
                 <button type="button" onclick="readExpiryPhoto()">Read Expiration Date</button>
 
@@ -99,6 +90,7 @@
             </form>
         </section>
 
+        <!-- Expiring Soon Items -->
         <section class="card">
             <div class="section-header">
                 <h2>Expiring soon</h2>
@@ -135,6 +127,7 @@
             </div>
         </section>
 
+        <!-- AI Recipe Suggestions -->
         <section class="card">
             <div class="section-header">
                 <h2>Cook this tonight</h2>
@@ -163,6 +156,7 @@
             </div>
         </section>
 
+        <!-- Waste Saved Tracker -->
         <section class="card impact-card">
             <div class="section-header">
                 <h2>Waste saved tracker</h2>

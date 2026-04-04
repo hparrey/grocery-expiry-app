@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Login | FoodSaver</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f6fb;
+      margin: 0;
+      padding: 0;
+      color: #16213e;
+    }
+
+    .page {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .card {
+      width: 100%;
+      max-width: 460px;
+      background: white;
+      border-radius: 24px;
+      padding: 32px;
+      box-shadow: 0 12px 32px rgba(0,0,0,0.08);
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: 2rem;
+    }
+
+    p.sub {
+      margin: 0 0 24px;
+      color: #5b6b88;
+      line-height: 1.5;
+    }
+
+    .notice {
+      border-radius: 12px;
+      padding: 12px 14px;
+      margin-bottom: 16px;
+      font-size: 0.95rem;
+    }
+
+    .notice.error {
+      background: #ffe5e5;
+      color: #8a1f1f;
+    }
+
+    .notice.message {
+      background: #e8f3ff;
+      color: #1f4d8a;
+    }
+
+    .section {
+      margin-top: 20px;
+      padding-top: 20px;
+      border-top: 1px solid #e8ecf3;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 6px;
+      font-weight: 600;
+      font-size: 0.95rem;
+    }
+
+    input {
+      width: 100%;
+      padding: 12px 14px;
+      margin-bottom: 14px;
+      border: 1px solid #d6dce8;
+      border-radius: 12px;
+      font-size: 1rem;
+      box-sizing: border-box;
+    }
+
+    button {
+      width: 100%;
+      border: none;
+      border-radius: 14px;
+      padding: 13px 16px;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      background: #16213e;
+      color: white;
+    }
+
+    button.secondary {
+      background: #5b6b88;
+    }
+
+    .small {
+      color: #6f7c96;
+      font-size: 0.9rem;
+      margin-top: 10px;
+      line-height: 1.4;
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="card">
+      <h1>FoodSaver</h1>
+      <p class="sub">Log in to access your own pantry and expiry tracker, or create an account to get started.</p>
+
+      {% if error %}
+        <div class="notice error">{{ error }}</div>
+      {% endif %}
+
+      {% if message %}
+        <div class="notice message">{{ message }}</div>
+      {% endif %}
+
+      <form method="POST" action="/login">
+        <label for="login-email">Email</label>
+        <input id="login-email" type="email" name="email" required />
+
+        <label for="login-password">Password</label>
+        <input id="login-password" type="password" name="password" required />
+
+        <button type="submit">Log In</button>
+      </form>
+
+      <div class="section">
+        <form method="POST" action="/signup">
+          <label for="signup-email">Create account with email</label>
+          <input id="signup-email" type="email" name="email" required />
+
+          <label for="signup-password">Create password</label>
+          <input id="signup-password" type="password" name="password" required />
+
+          <button class="secondary" type="submit">Sign Up</button>
+        </form>
+        <div class="small">
+          If email confirmation is enabled in Supabase, you may need to confirm your email before your first login.
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
